@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Be My Valentine 💘</title>
+
+<style>
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Poppins', sans-serif;
+    background: linear-gradient(135deg, #ff758c, #ff7eb3);
+    overflow: hidden;
+    color: white;
+    text-align: center;
+    height: 100vh;
+}
+
+/* Floating hearts */
+.heart {
+    position: fixed;
+    bottom: -20px;
+    font-size: 20px;
+    opacity: 0.7;
+    animation: floatUp linear forwards;
+}
+@keyframes floatUp {
+    to { transform: translateY(-110vh); opacity: 0; }
+}
+
+h1 {
+    margin-top: 80px;
+    font-size: 32px;
+}
+
+.buttons {
+    margin-top: 50px;
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+}
+
+button {
+    padding: 15px 30px;
+    font-size: 18px;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: left 0.4s ease, top 0.4s ease, transform 0.3s ease;
+}
+
+#yesBtn {
+    background: #28a745;
+    color: white;
+    box-shadow: 0 0 15px #28a745;
+}
+
+#noBtn {
+    background: #dc3545;
+    color: white;
+}
+
+/* Bounce + Shake */
+@keyframes bounceShake {
+    0%   { transform: translateY(0) rotate(0); }
+    20%  { transform: translateY(-8px) rotate(-4deg); }
+    40%  { transform: translateY(0) rotate(4deg); }
+    60%  { transform: translateY(-6px) rotate(-3deg); }
+    80%  { transform: translateY(0) rotate(3deg); }
+    100% { transform: translateY(0) rotate(0); }
+}
+.bounce-shake { animation: bounceShake 0.5s ease; }
+
+/* Floating No text */
+.no-float {
+    position: fixed;
+    font-size: 14px;
+    font-weight: bold;
+    color: white;
+    pointer-events: none;
+    animation: floatText 1s ease forwards;
+}
+@keyframes floatText {
+    0% { opacity: 1; transform: translateY(0); }
+    100% { opacity: 0; transform: translateY(-40px); }
+}
+
+/* Success Screen */
+#messageContainer {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    z-index: 9999;
+}
+
+#message {
+    font-size: 40px;
+    font-weight: bold;
+    background: rgba(0, 0, 0, 0.5); /* semi-transparent background */
+    padding: 20px 40px;
+    border-radius: 15px;
+    opacity: 0; /* start hidden */
+    transition: opacity 2s ease-in-out; /* smooth fade-in */
+}
+
+/* Fullscreen GIF */
+#memeImage {
+    width: 100vw;
+    height: 100vh;
+    object-fit: cover;
+    border-radius: 0;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 998; /* behind message */
+    opacity: 0;
+    transition: opacity 2s ease-in-out;
+    pointer-events: none; /* allow clicks through GIF */
+}
+
+/* Confetti Canvas */
+canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    z-index: 997; /* behind GIF */
+}
+</style>
+</head>
+
+<body>
+
+<h1 id="mainTitle">Jeisha Ferylle 💖<br>Will You Be My Valentine?</h1>
+
+<div class="buttons">
+    <button id="yesBtn" onclick="sayYes()">Yes 💕</button>
+    <button id="noBtn">No 💔</button>
+</div>
+
+<div id="messageContainer">
+    <div id="message">SHE SAID YES 💍</div>
+</div>
+
+<img id="memeImage" src="images/catmeme.gif" alt="Cute Cat Meme">
+
+<canvas id="confetti"></canvas>
+
+<audio id="bgMusic" src="images/palagi.mp3" loop></audio>
+<audio id="whisper" src="whisper.mp3"></audio>
+<audio id="sadViolin" src="sad-violin.mp3"></audio>
+
+<script>
+
+/* Floating Hearts */
+function createHeart() {
+    const heart = document.createElement("div");
+    heart.classList.add("heart");
+    heart.innerHTML = "💖";
+    heart.style.left = Math.random() * 100 + "vw";
+    heart.style.fontSize = (Math.random() * 20 + 15) + "px";
+    heart.style.animationDuration = (Math.random() * 3 + 3) + "s";
+    document.body.appendChild(heart);
+    setTimeout(() => heart.remove(), 6000);
+}
+setInterval(createHeart, 400);
+
+/* NO Button Logic */
+const noBtn = document.getElementById("noBtn");
+const yesBtn = document.getElementById("yesBtn");
+const title = document.getElementById("mainTitle");
+const sadViolin = document.getElementById("sadViolin");
+
+let noCount = 0;
+let isFixed = false;
+
+const noTexts = [
+    "Don't do this 😭",
+    "Please nooo 🥺",
+    "Think about it 😢",
+    "Jeisha please 💔",
+    "Are you sure?? 😳"
+];
+
+function createNoFloat() {
+    const floatText = document.createElement("div");
+    floatText.classList.add("no-float");
+    floatText.innerText = "Nooo~ 😣";
+
+    const rect = noBtn.getBoundingClientRect();
+    floatText.style.left = rect.left + rect.width/2 + "px";
+    floatText.style.top = rect.top + "px";
+
+    document.body.appendChild(floatText);
+    setTimeout(() => floatText.remove(), 1000);
+}
+
+function isOverlapping(rect1, rect2) {
+    return !(
+        rect1.right < rect2.left ||
+        rect1.left > rect2.right ||
+        rect1.bottom < rect2.top ||
+        rect1.top > rect2.bottom
+    );
+}
+
+function moveNoButton() {
+    sadViolin.currentTime = 0;
+    sadViolin.play();
+
+    if (noCount < noTexts.length) {
+        noBtn.textContent = noTexts[noCount];
+        noCount++;
+    }
+
+    if (noCount >= noTexts.length) {
+        noBtn.textContent = "Yes 💕";
+        noBtn.style.background = "#28a745";
+        noBtn.removeEventListener("click", moveNoButton);
+        noBtn.addEventListener("click", sayYes);
+        return;
+    }
+
+    noBtn.classList.add("bounce-shake");
+    setTimeout(() => noBtn.classList.remove("bounce-shake"), 500);
+
+    createNoFloat();
+
+    const btnWidth = noBtn.offsetWidth;
+    const btnHeight = noBtn.offsetHeight;
+    const titleBottom = title.getBoundingClientRect().bottom;
+    const yesRect = yesBtn.getBoundingClientRect();
+
+    const padding = 20;
+    const minY = titleBottom + padding;
+    const maxX = window.innerWidth - btnWidth - padding;
+    const maxY = window.innerHeight - btnHeight - padding;
+
+    if (!isFixed) {
+        const rect = noBtn.getBoundingClientRect();
+        noBtn.style.position = "fixed";
+        noBtn.style.left = rect.left + "px";
+        noBtn.style.top = rect.top + "px";
+        isFixed = true;
+        noBtn.offsetHeight;
+    }
+
+    let randomX, randomY, newRect;
+    do {
+        randomX = Math.random() * maxX;
+        randomY = Math.random() * (maxY - minY) + minY;
+
+        newRect = {
+            left: randomX,
+            right: randomX + btnWidth,
+            top: randomY,
+            bottom: randomY + btnHeight
+        };
+
+    } while (isOverlapping(newRect, yesRect));
+
+    noBtn.style.left = randomX + "px";
+    noBtn.style.top = randomY + "px";
+}
+
+noBtn.addEventListener("click", moveNoButton);
+
+/* YES */
+function sayYes() {
+    document.getElementById("mainTitle").style.display = "none";
+    document.querySelector(".buttons").style.display = "none";
+
+    const messageContainer = document.getElementById("messageContainer");
+    messageContainer.style.display = "block";
+
+    // Fade in message smoothly
+    const message = document.getElementById("message");
+    setTimeout(() => {
+        message.style.opacity = 1;
+    }, 50);
+
+    document.getElementById("whisper").play();
+    const bgMusic = document.getElementById("bgMusic");
+    bgMusic.volume = 0.3;
+    bgMusic.play();
+
+    const meme = document.getElementById("memeImage");
+    meme.style.opacity = 1; // fade in GIF smoothly
+
+    startConfetti();
+}
+
+/* Confetti */
+const canvas = document.getElementById("confetti");
+const ctx = canvas.getContext("2d");
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+let pieces = [];
+
+function startConfetti() {
+    for (let i = 0; i < 200; i++) {
+        pieces.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            r: Math.random() * 6 + 4,
+            d: Math.random() * 4 + 2,
+            color: `hsl(${Math.random()*360},100%,60%)`
+        });
+    }
+    animateConfetti();
+}
+
+function animateConfetti() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    pieces.forEach(p => {
+        p.y += p.d;
+        if (p.y > canvas.height) p.y = 0;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = p.color;
+        ctx.fill();
+    });
+    requestAnimationFrame(animateConfetti);
+}
+
+/* Handle window resize for canvas */
+window.addEventListener("resize", () => {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+});
+</script>
+</body>
+</html>
